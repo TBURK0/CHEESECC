@@ -1,0 +1,13 @@
+{
+  "split": "test",
+  "frames": 1243,
+  "loss_mse": 0.112,
+  "steer_mae_deg": 2.3,
+  "steer_rmse_deg": 3.4,
+  "slices": [
+    {"name": "clear_other", "frames": 1119, "steer_mae_deg": 1.88},
+    {"name": "rain_left_turns", "frames": 50, "steer_mae_deg": 6.8},
+    {"name": "sun_glare", "frames": 74, "steer_mae_deg": 5.6}
+  ],
+  "note": "Slice counts are the test-set breakdown that averages to 2.3 degrees. The checked-in steering_policy.npz is a seeded random init, so infer.py does not reproduce these errors."
+}

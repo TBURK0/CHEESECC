@@ -1,0 +1,48 @@
+{
+  "name": "cheesecc-dave2-steering",
+  "description": "DAVE-2 style camera-to-steering CNN. Five convolutions, then 100-50-10-1. The checked-in weights are a seeded random initialization, not a converged checkpoint.",
+  "weights_file": "steering_policy.npz",
+  "normalization_file": "normalization_stats.json",
+  "training_config_file": "training_config.yaml",
+  "dataset_manifest_file": "dataset_manifest.json",
+  "training_log_file": "training_log.csv",
+  "metrics_file": "metrics.json",
+  "parameter_count": 252219,
+  "seed": 26,
+  "init": {
+    "distribution": "normal",
+    "mean": 0.0,
+    "std": 0.02,
+    "fc4_std": 0.35,
+    "dtype": "float32"
+  },
+  "input": {
+    "name": "camera_frame",
+    "layout": "CHW",
+    "color": "RGB",
+    "range": [0.0, 1.0],
+    "channels": 3,
+    "height": 66,
+    "width": 200,
+    "crop": "hood and sky removed, matching the PilotNet 66x200 window"
+  },
+  "output": {
+    "name": "steer_wheel_deg",
+    "units": "deg",
+    "shape": [1],
+    "sign": "positive is left (CCW), same convention as DriveCommand.steerWheelDeg"
+  },
+  "activation": "relu on conv1-conv5 and fc1-fc3; fc4 is linear",
+  "padding": "valid",
+  "layers": [
+    {"name": "conv1", "type": "conv", "in_channels": 3, "filters": 24, "kernel": 5, "stride": 2, "out_hw": [31, 98]},
+    {"name": "conv2", "type": "conv", "in_channels": 24, "filters": 36, "kernel": 5, "stride": 2, "out_hw": [14, 47]},
+    {"name": "conv3", "type": "conv", "in_channels": 36, "filters": 48, "kernel": 5, "stride": 2, "out_hw": [5, 22]},
+    {"name": "conv4", "type": "conv", "in_channels": 48, "filters": 64, "kernel": 3, "stride": 1, "out_hw": [3, 20]},
+    {"name": "conv5", "type": "conv", "in_channels": 64, "filters": 64, "kernel": 3, "stride": 1, "out_hw": [1, 18], "flatten": 1152},
+    {"name": "fc1", "type": "fc", "in": 1152, "units": 100},
+    {"name": "fc2", "type": "fc", "in": 100, "units": 50},
+    {"name": "fc3", "type": "fc", "in": 50, "units": 10},
+    {"name": "fc4", "type": "fc", "in": 10, "units": 1}
+  ]
+}

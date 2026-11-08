@@ -1,0 +1,21 @@
+{
+  "name": "uc-campus-steering",
+  "location": "University of Cincinnati campus",
+  "frames": 12437,
+  "duration_s": 22320,
+  "duration_hours": 6.2,
+  "note": "6.2 hours of campus driving. 12,437 frames are the labeled 66x200 crops kept after dropping stops, glare washouts, and duplicate timestamps. Not every video frame is in the set.",
+  "label": "steer_wheel_deg",
+  "splits": {"train": 9950, "val": 1244, "test": 1243},
+  "sessions": [
+    {"id": "clifton-loop-morning", "route": "Clifton Ave campus loop", "condition": "clear", "frames": 2100, "duration_s": 3800},
+    {"id": "calhoun-mlk-noon", "route": "Calhoun St to MLK", "condition": "clear", "frames": 1840, "duration_s": 3300},
+    {"id": "jefferson-evening", "route": "Jefferson Ave", "condition": "overcast", "frames": 1620, "duration_s": 2900},
+    {"id": "mcmillan-campus", "route": "McMillan St", "condition": "clear", "frames": 1488, "duration_s": 2700},
+    {"id": "nippert-return", "route": "Campus green to Nippert", "condition": "clear", "frames": 1390, "duration_s": 2500},
+    {"id": "straight-st-rain", "route": "Straight St", "condition": "rain", "frames": 980, "duration_s": 1750},
+    {"id": "clifton-glare", "route": "Clifton Ave westbound", "condition": "sun_glare", "frames": 1120, "duration_s": 1980},
+    {"id": "campus-green-night", "route": "Campus green loop", "condition": "night", "frames": 890, "duration_s": 1600},
+    {"id": "digital-futures-loop", "route": "Digital Futures loop", "condition": "clear", "frames": 1009, "duration_s": 1790}
+  ]
+}

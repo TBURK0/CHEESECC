@@ -1,0 +1,9 @@
+{
+  "color": "RGB",
+  "range": [0.0, 1.0],
+  "layout": "CHW",
+  "channels": ["R", "G", "B"],
+  "mean": [0.412, 0.438, 0.391],
+  "std": [0.231, 0.224, 0.241],
+  "source": "per-channel moments for the 66x200 campus crop, stored in the same [0, 1] scale infer.py expects"
+}

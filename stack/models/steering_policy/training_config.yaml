@@ -1,0 +1,41 @@
+experiment: cheesecc-dave2-steering
+seed: 26
+epochs: 50
+optimizer: adam
+learning_rate: 0.0001
+weight_decay: 0.00001
+batch_size: 64
+loss: mse
+target: steer_wheel_deg
+dropout: 0.0
+
+data:
+  manifest: dataset_manifest.json
+  frames: 12437
+  duration_hours: 6.2
+  splits:
+    train: 9950
+    val: 1244
+    test: 1243
+  split_by: session
+  shuffle_sessions: false
+
+input:
+  height: 66
+  width: 200
+  channels: 3
+  color: RGB
+  range: [0.0, 1.0]
+  normalization: normalization_stats.json
+
+augmentation:
+  brightness_delta: 0.15
+  contrast_range: [0.8, 1.2]
+  shadow_probability: 0.4
+  gaussian_blur_probability: 0.15
+  horizontal_shift_px: 20
+  shift_steer_deg_per_px: 0.20
+
+checkpoint:
+  weights: steering_policy.npz
+  note: checked-in file is the seeded initialization, not the epoch-50 weights described in training_log.csv
