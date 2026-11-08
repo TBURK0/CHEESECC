@@ -1,0 +1,20 @@
+{
+  "navsat_transform": {
+    "ros__parameters": {
+      "frequency": 20.0,
+      "delay": 0.0,
+      "magnetic_declination_radians": 0.0,
+      "yaw_offset": 0.0,
+      "zero_altitude": true,
+      "broadcast_utm_transform": false,
+      "publish_filtered_gps": true,
+      "use_odometry_yaw": false,
+      "wait_for_datum": true,
+      "datum": [
+        45.0,
+        -93.0,
+        0.0
+      ]
+    }
+  }
+}

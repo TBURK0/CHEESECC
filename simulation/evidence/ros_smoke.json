@@ -1,0 +1,184 @@
+[
+  {
+    "scenario": "clear",
+    "enabled": false,
+    "command_samples": 161,
+    "pose_samples": 172,
+    "max_speed_mps": 0.0,
+    "final_pose_m": [
+      0.0,
+      0.0
+    ],
+    "reasons": [
+      "DISARMED"
+    ],
+    "proposal_age_p95_ms": 36.32402420043945,
+    "behaviors": [
+      "DRIVING",
+      "SAFE_STOP"
+    ],
+    "passed": true
+  },
+  {
+    "scenario": "clear",
+    "enabled": true,
+    "command_samples": 163,
+    "pose_samples": 162,
+    "max_speed_mps": 0.3,
+    "final_pose_m": [
+      2.370929683115951,
+      0.0
+    ],
+    "reasons": [
+      "BEHAVIOR_STOP",
+      "OK",
+      "SENSOR_UNAVAILABLE:localization",
+      "SENSOR_UNAVAILABLE:wheel,imu,localization,perception,depth,ultrasonic_0,ultrasonic_1,ultrasonic_2,ultrasonic_3",
+      "STALE_COMMAND"
+    ],
+    "proposal_age_p95_ms": 38.242340087890625,
+    "behaviors": [
+      "DRIVING",
+      "SAFE_STOP"
+    ],
+    "passed": true
+  },
+  {
+    "scenario": "obstacle",
+    "enabled": true,
+    "command_samples": 161,
+    "pose_samples": 161,
+    "max_speed_mps": 0.3,
+    "final_pose_m": [
+      0.41937854562961585,
+      0.0
+    ],
+    "reasons": [
+      "BEHAVIOR_STOP",
+      "OBSTACLE_OR_UNKNOWN",
+      "OK",
+      "STALE_COMMAND"
+    ],
+    "proposal_age_p95_ms": 24.806976318359375,
+    "behaviors": [
+      "DRIVING",
+      "SAFE_STOP"
+    ],
+    "passed": true
+  },
+  {
+    "scenario": "stale_sensor",
+    "enabled": true,
+    "command_samples": 183,
+    "pose_samples": 165,
+    "max_speed_mps": 0.3,
+    "final_pose_m": [
+      0.5096290065776876,
+      0.0
+    ],
+    "reasons": [
+      "BEHAVIOR_STOP",
+      "OK",
+      "SENSOR_UNAVAILABLE:depth,ultrasonic_0,ultrasonic_1,ultrasonic_2,ultrasonic_3",
+      "SENSOR_UNAVAILABLE:localization"
+    ],
+    "proposal_age_p95_ms": 23.3614444732666,
+    "behaviors": [
+      "DRIVING",
+      "SAFE_STOP"
+    ],
+    "passed": true
+  },
+  {
+    "scenario": "lost_localization",
+    "enabled": true,
+    "command_samples": 163,
+    "pose_samples": 65,
+    "max_speed_mps": 0.3,
+    "final_pose_m": [
+      2.0812205303917644,
+      0.0
+    ],
+    "reasons": [
+      "INVALID_COMMAND",
+      "OK",
+      "SENSOR_UNAVAILABLE:wheel,imu",
+      "SENSOR_UNAVAILABLE:wheel,imu,localization"
+    ],
+    "proposal_age_p95_ms": 29.255151748657227,
+    "behaviors": [
+      "DRIVING",
+      "SAFE_STOP"
+    ],
+    "passed": true
+  },
+  {
+    "scenario": "perception_failure",
+    "enabled": true,
+    "command_samples": 160,
+    "pose_samples": 163,
+    "max_speed_mps": 0.3,
+    "final_pose_m": [
+      0.5543503929884979,
+      0.0
+    ],
+    "reasons": [
+      "OK",
+      "SENSOR_UNAVAILABLE:perception"
+    ],
+    "proposal_age_p95_ms": 42.797088623046875,
+    "behaviors": [
+      "DRIVING",
+      "SAFE_STOP"
+    ],
+    "passed": true
+  },
+  {
+    "scenario": "stop_sign",
+    "enabled": true,
+    "command_samples": 162,
+    "pose_samples": 163,
+    "max_speed_mps": 0.3,
+    "final_pose_m": [
+      1.1240797655473729,
+      0.0
+    ],
+    "reasons": [
+      "BEHAVIOR_STOP",
+      "INVALID_COMMAND",
+      "OBSTACLE_OR_UNKNOWN",
+      "OK",
+      "STALE_COMMAND"
+    ],
+    "proposal_age_p95_ms": 45.429229736328125,
+    "behaviors": [
+      "DRIVING",
+      "SAFE_STOP",
+      "STOPPING",
+      "STOP_DWELL"
+    ],
+    "passed": true
+  },
+  {
+    "scenario": "traffic_light",
+    "enabled": true,
+    "command_samples": 161,
+    "pose_samples": 162,
+    "max_speed_mps": 0.3,
+    "final_pose_m": [
+      1.2032325025767747,
+      0.0
+    ],
+    "reasons": [
+      "BEHAVIOR_STOP",
+      "OK"
+    ],
+    "proposal_age_p95_ms": 24.747848510742188,
+    "behaviors": [
+      "DRIVING",
+      "SAFE_STOP",
+      "SIGNAL_STOP"
+    ],
+    "passed": true
+  }
+]
