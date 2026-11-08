@@ -8,7 +8,7 @@ The phone does three things:
 - A garage of real cars. Wheelbase, track, mass, engine, steering ratio, and tire size change the wheel angle and the speed target. Add a car in `theapp/CHEESECC/Data/Catalog/cars.json`.
 - An on-device log of those pushes, tied to the map point and the selected car. Learn charts handwheel angle against curvature. Drag the wheel during a run and those samples are marked `driver`. Export writes JSON.
 
-Replay 5× drives the fetched route when you are indoors. Turn Replay off to follow the phone's GPS. Command frames stay in the on-screen bus and in SwiftData. This build does not actuate a car.
+The phone follows a live GPS fix, or an Xcode simulated location or GPX track the same way. Command frames stay in the on-screen bus and in SwiftData. This build does not actuate a car.
 
 Bundle id is `com.makeuc.cheesecc`. Change it to the id registered on your Apple team before upload.
 
@@ -21,4 +21,4 @@ Internal testers are the hackathon path. External review is too slow.
 3. Run the **TestFlight** workflow. It archives `theapp/CHEESECC.xcodeproj` on a Mac runner and uploads.
 4. Add internal testers. Processing usually takes a few tens of minutes.
 
-This Windows checkout cannot compile or sign the iOS app. Until that workflow has secrets, use Replay in the Xcode simulator, or install from Xcode onto a phone.
+This Windows checkout cannot compile or sign the iOS app. Until that workflow has secrets, run the Xcode simulator with a simulated location or GPX track, or install from Xcode onto a phone.

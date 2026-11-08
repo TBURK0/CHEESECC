@@ -100,7 +100,7 @@ struct LearnView: View {
                     .onDelete(perform: deleteSessions)
                 }
             }
-            .navigationTitle("Learn")
+            .navigationTitle("On-Device Telemetry & Kinematic Learning")
             .toolbar {
                 if let exportURL {
                     ShareLink(item: exportURL) {
