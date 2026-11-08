@@ -59,8 +59,11 @@ jobs:
             CODE_SIGN_STYLE=Automatic \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             archive 2>&1 | tee /tmp/xcodebuild-archive.log || {
-              echo "::error::Xcode archive failed! Error summary:"
-              grep -E "error:" /tmp/xcodebuild-archive.log || tail -n 40 /tmp/xcodebuild-archive.log
+              ERR_MSG=$(grep -E "error:" /tmp/xcodebuild-archive.log | head -n 3 | tr '\n' ' ' | sed 's/::/--/g')
+              if [ -z "$ERR_MSG" ]; then
+                ERR_MSG=$(tail -n 10 /tmp/xcodebuild-archive.log | tr '\n' ' ' | sed 's/::/--/g')
+              fi
+              echo "::error title=Xcode Archive Error::$ERR_MSG"
               exit 65
             }
 
