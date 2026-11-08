@@ -1,8 +1,10 @@
 # CHEESECC
 
-CHEESECC is an on-vehicle autonomy stack with an iPhone as the rider interface. The phone picks a destination and rides along with GPS. A vehicle computer turns cameras, depth, ultrasonics, and inertial sensors into a path and an actuator request. A small microcontroller is the last safety authority before the steering, throttle, and brake. Nothing on the vehicle computer is allowed to move the car by itself if that gateway has gone quiet.
+MAKEUC 26 submission. CHEESECC is an on-vehicle autonomy stack with an iPhone as the rider interface.
 
-The shape is the same idea as [treehacks2026](https://github.com/bryandong24/treehacks2026): a phone, a vehicle computer, a learned driving model, and a path onto the vehicle's bus. The pieces here are different. That project runs openpilot-style ONNX models on a Jetson AGX Thor, talks to a Honda Bosch car through a comma panda, routes with Valhalla, and ties the phone to the car over MQTT, with Alpamayo on a cloud GPU. CHEESECC uses Swift and MapKit on the phone, a NumPy stack for the classical autonomy layers, a DAVE-2 style camera-to-steering network, ROS 2 on the vehicle computer, and a serial gateway into an STM32 that owns the actuators.
+The phone picks a destination and rides along with GPS. A vehicle computer turns the forward camera, depth, ultrasonics, and inertial sensors into a path and an actuator request. A DAVE-2 style network maps one camera frame to a steering-wheel angle. A small microcontroller is the last safety authority before the steering, throttle, and brake. If that gateway goes quiet, the vehicle computer cannot keep the car moving.
+
+The phone is Swift and MapKit. The classical autonomy layers are a NumPy stack that also runs without ROS. The vehicle computer is ROS 2. The gateway is an STM32 on a serial link, and it is the only component that drives the actuators.
 
 ## A drive, from destination to actuators
 
