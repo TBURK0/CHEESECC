@@ -6,8 +6,8 @@ import SwiftData
 final class DriveController: ObservableObject {
     @Published var route: [LatLon] = []
     @Published var destinationName = ""
+    @Published var destination: LatLon?
     @Published var running = false
-    @Published var replay = true
     @Published var status = "Search a destination, then tap Go."
     @Published var speedMps = 0.0
     @Published var headingDeg = 0.0
@@ -27,7 +27,6 @@ final class DriveController: ObservableObject {
     @Published var routeLengthM = 0.0
     @Published var selectedCar: CarModel?
     @Published private(set) var activeCar: CarModel?
-    @Published var replayRate = 5.0
 
     var context: ModelContext?
     var locationSource: LocationService?
@@ -39,27 +38,51 @@ final class DriveController: ObservableObject {
     private var sinceCommand = 0.0
     private var generation = 0
     private var commands: [DriveCommand] = []
+    private var offRouteSince: Date?
+    private var rerouteNotBefore = Date.distantPast
+    private var rerouteGeneration = 0
+    private var rerouting = false
 
-    func setRoute(_ coordinates: [LatLon], name: String) {
+    private static let offRouteMeters = 60.0
+    private static let offRouteDwell: TimeInterval = 1.5
+    private static let rerouteCooldown: TimeInterval = 6
+
+    func setRoute(_ coordinates: [LatLon], name: String, destination: LatLon) {
         stop(updateStatus: nil)
-        route = coordinates
-        destinationName = name
-        let built = RoutePath(coordinates: coordinates)
-        path = built
-        routeLengthM = built.totalM
+        install(coordinates, name: name, destination: destination, snapToFix: false)
+        status = "Route ready. \(Units.meters(routeLengthM)) to \(name)."
+    }
+
+    /// Swaps the polyline without ending a live session. Snaps progress to the phone.
+    func replaceRoute(_ coordinates: [LatLon], name: String, destination: LatLon) {
+        guard running else {
+            setRoute(coordinates, name: name, destination: destination)
+            return
+        }
+        cancelReroute()
+        rerouteNotBefore = Date().addingTimeInterval(Self.rerouteCooldown)
+        install(coordinates, name: name, destination: destination, snapToFix: true)
+        status = "Following GPS."
+    }
+
+    func clearRoute() {
+        let wasRunning = running
+        stop(updateStatus: nil)
+        route = []
+        destinationName = ""
+        destination = nil
+        path = nil
+        routeLengthM = 0
         distanceAlong = 0
         speedMps = 0
+        lookahead = nil
         commands = []
         commandLog = ""
         sinceCommand = 0
-        if let first = coordinates.first {
-            position = first
+        if let fix = locationSource?.coordinate {
+            position = fix
         }
-        if coordinates.count >= 2 {
-            headingDeg = GeoMath.bearingDeg(from: coordinates[0], to: coordinates[1])
-        }
-        lookahead = built.point(atDistance: 12).coordinate
-        status = "Route ready. \(Units.meters(built.totalM)) to \(name)."
+        status = wasRunning ? "Stopped." : "Search a destination, then tap Go."
     }
 
     func start() {
@@ -71,8 +94,8 @@ final class DriveController: ObservableObject {
             status = "Pick a car in Garage."
             return
         }
-        if !replay && locationSource?.coordinate == nil {
-            status = "Waiting for a GPS lock. Turn on Replay indoors."
+        guard let fix = locationSource?.coordinate else {
+            status = "Waiting for a GPS lock."
             return
         }
 
@@ -81,28 +104,22 @@ final class DriveController: ObservableObject {
         tick?.cancel()
         activeCar = selectedCar
         sinceCommand = 0
+        offRouteSince = nil
 
-        if replay {
-            distanceAlong = 0
-            speedMps = 0
-            position = path.coordinates[0]
-            headingDeg = GeoMath.bearingDeg(from: path.coordinates[0], to: path.coordinates[1])
-        } else if let fix = locationSource?.coordinate {
-            let snap = path.closest(to: fix)
-            distanceAlong = snap.along
-            position = fix
-            if let speed = locationSource?.speedMps, speed >= 0 {
-                speedMps = speed
-            }
-            headingDeg = path.point(atDistance: snap.along).bearingDeg
+        let snap = path.closest(to: fix)
+        distanceAlong = snap.along
+        position = fix
+        if let speed = locationSource?.speedMps, speed >= 0 {
+            speedMps = speed
         }
+        headingDeg = heading(along: snap.along, path: path)
 
         let record = DriveSession(carId: selectedCar.id, carName: selectedCar.displayName)
         context?.insert(record)
         try? context?.save()
         session = record
         running = true
-        status = replay ? "Replay running." : "Following GPS."
+        status = "Following GPS."
 
         tick = Task { @MainActor [weak self] in
             var last = Date()
@@ -120,6 +137,7 @@ final class DriveController: ObservableObject {
 
     func stop(updateStatus: String? = "Stopped.") {
         generation += 1
+        cancelReroute()
         running = false
         tick?.cancel()
         tick = nil
@@ -130,15 +148,12 @@ final class DriveController: ObservableObject {
     }
 
     private func step(wallDT: Double) {
-        guard running, let path, let car = activeCar else { return }
-        let dt = replay ? wallDT * replayRate : wallDT
-
-        if !replay {
-            applyLiveFix(path: path)
-        }
+        guard running, let path else { return }
+        applyLiveFix(path: path)
+        guard running, let livePath = self.path, let car = activeCar else { return }
 
         let solved = VehicleCommandSolver.solve(
-            path: path,
+            path: livePath,
             distanceAlong: distanceAlong,
             position: position,
             headingDeg: headingDeg,
@@ -157,7 +172,7 @@ final class DriveController: ObservableObject {
         steerWheelDeg = manualSteer ?? solved.steer.steerWheelDeg
         let solvedFrom = position
 
-        sinceCommand += dt
+        sinceCommand += wallDT
         if sinceCommand + 0.0001 >= solved.sample.lookaheadS {
             sinceCommand = 0
             emit(
@@ -168,29 +183,17 @@ final class DriveController: ObservableObject {
             )
         }
 
-        if replay {
-            let accel = LongitudinalModel.acceleration(
-                car: car,
-                speed: speedMps,
-                throttle: throttle,
-                brake: brake
-            )
-            speedMps = max(0, speedMps + accel * dt)
-            distanceAlong = min(path.totalM, distanceAlong + speedMps * dt)
-            let pose = path.point(atDistance: distanceAlong)
-            position = pose.coordinate
-            headingDeg = pose.bearingDeg
-            status = "Replay \(Units.mph(speedMps))."
-        }
-
-        if distanceAlong >= path.totalM - 1.5 {
+        if distanceAlong >= livePath.totalM - 1.5 {
             stop(updateStatus: "Arrived at \(destinationName).")
         }
     }
 
     private func applyLiveFix(path: RoutePath) {
         guard let fix = locationSource?.coordinate else {
-            status = "GPS dropped. Replay is still available."
+            offRouteSince = nil
+            if !rerouting {
+                setStatus("GPS dropped.")
+            }
             return
         }
         let snap = path.closest(to: fix)
@@ -199,15 +202,109 @@ final class DriveController: ObservableObject {
         if let speed = locationSource?.speedMps, speed >= 0 {
             speedMps = speed
         }
-        if speedMps > 1.5, let course = locationSource?.courseDeg, course >= 0 {
-            headingDeg = course
+        headingDeg = heading(along: snap.along, path: path)
+
+        let now = Date()
+        if snap.offsetM > Self.offRouteMeters {
+            if offRouteSince == nil {
+                offRouteSince = now
+            }
+            let stayed = now.timeIntervalSince(offRouteSince ?? now) >= Self.offRouteDwell
+            if stayed, now >= rerouteNotBefore, !rerouting {
+                beginReroute(from: fix)
+            }
         } else {
-            headingDeg = path.point(atDistance: snap.along).bearingDeg
+            offRouteSince = nil
+            if !rerouting {
+                setStatus("Following GPS.")
+            }
         }
-        if snap.offsetM > 60 {
-            status = "Off the route by \(Units.meters(snap.offsetM))."
+    }
+
+    private func beginReroute(from fix: LatLon) {
+        guard running, !rerouting, let destination else { return }
+        rerouting = true
+        rerouteGeneration += 1
+        let token = rerouteGeneration
+        let name = destinationName
+        rerouteNotBefore = Date().addingTimeInterval(Self.rerouteCooldown)
+        offRouteSince = nil
+        setStatus("Recalculating…")
+
+        Task { @MainActor [weak self] in
+            do {
+                let line = try await RouteService.driveRoute(from: fix, to: destination)
+                guard let self, self.rerouteGeneration == token, self.running else { return }
+                self.replaceRoute(line, name: name, destination: destination)
+            } catch {
+                guard let self, self.rerouteGeneration == token, self.running else { return }
+                self.rerouting = false
+                self.setStatus("Following GPS.")
+            }
+        }
+    }
+
+    private func install(
+        _ coordinates: [LatLon],
+        name: String,
+        destination: LatLon,
+        snapToFix: Bool
+    ) {
+        route = coordinates
+        destinationName = name
+        self.destination = destination
+        let built = RoutePath(coordinates: coordinates)
+        path = built
+        routeLengthM = built.totalM
+
+        if snapToFix, coordinates.count >= 2 {
+            if let fix = locationSource?.coordinate {
+                let snap = built.closest(to: fix)
+                distanceAlong = snap.along
+                position = fix
+                if let speed = locationSource?.speedMps, speed >= 0 {
+                    speedMps = speed
+                }
+                headingDeg = heading(along: snap.along, path: built)
+            }
         } else {
-            status = "Following GPS."
+            distanceAlong = 0
+            speedMps = 0
+            commands = []
+            commandLog = ""
+            sinceCommand = 0
+            if let first = coordinates.first {
+                position = first
+            }
+            if coordinates.count >= 2 {
+                headingDeg = GeoMath.bearingDeg(from: coordinates[0], to: coordinates[1])
+            }
+        }
+
+        if coordinates.isEmpty {
+            lookahead = nil
+        } else {
+            lookahead = built.point(atDistance: min(12, built.totalM)).coordinate
+        }
+    }
+
+    private func heading(along: Double, path: RoutePath) -> Double {
+        if speedMps > 1.5, let course = locationSource?.courseDeg, course >= 0 {
+            return course
+        }
+        return path.point(atDistance: along).bearingDeg
+    }
+
+    private func cancelReroute() {
+        rerouteGeneration += 1
+        rerouting = false
+        offRouteSince = nil
+        rerouteNotBefore = .distantPast
+    }
+
+    private func setStatus(_ text: String) {
+        if status != text {
+            status = text
         }
     }
 

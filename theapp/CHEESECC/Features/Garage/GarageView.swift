@@ -17,9 +17,18 @@ struct GarageView: View {
                 }
                 if let car = selected {
                     Section(car.displayName) {
-                        ChassisDiagramView(car: car, steerWheelDeg: 0)
-                            .frame(height: 180)
-                            .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+                        Group {
+                            if car.id == "hyundai-elantra-2019" {
+                                Image("Elantra2019")
+                                    .resizable()
+                                    .scaledToFit()
+                            } else {
+                                ChassisDiagramView(car: car, steerWheelDeg: 0)
+                            }
+                        }
+                        .frame(height: 180)
+                        .frame(maxWidth: .infinity)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
                         spec("Body", car.bodyStyle)
                         spec("Size", String(format: "%.2f × %.2f × %.2f m", car.lengthM, car.widthM, car.heightM))
                         spec("Wheelbase", String(format: "%.2f m", car.wheelbaseM))

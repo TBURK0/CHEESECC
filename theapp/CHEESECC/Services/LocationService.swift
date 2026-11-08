@@ -34,11 +34,11 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         authorization = manager.authorizationStatus
         switch manager.authorizationStatus {
-        case .authorizedAlways, .authorizedWhenInUse:
+        case .authorizedWhenInUse, .authorizedAlways:
             statusText = coordinate == nil ? "GPS on" : statusText
             manager.startUpdatingLocation()
         case .denied, .restricted:
-            statusText = "Location off. Replay still works."
+            statusText = "Location off. Allow location while using the app."
         case .notDetermined:
             statusText = "Allow location to use live GPS."
         @unknown default:

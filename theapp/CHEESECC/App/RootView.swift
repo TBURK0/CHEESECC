@@ -2,7 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(\.modelContext) private var modelContext
-    @AppStorage("selectedCarID") private var selectedCarID = "honda-accord-2018"
+    @AppStorage("selectedCarID") private var selectedCarID = "hyundai-elantra-2019"
     @StateObject private var drive = DriveController()
     @StateObject private var location = LocationService()
 
