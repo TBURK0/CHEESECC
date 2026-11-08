@@ -95,8 +95,9 @@ class Stanley:
 
 @dataclass
 class RearWheelFeedbackConfig:
-    k_e: float = 0.3  # 1/m^2-ish cross-track gain
-    k_psi: float = 1.5  # heading gain, 1/m
+    # Linearised in arc length: e'' + k_psi e' + k_e e = 0 -> wn = sqrt(k_e) (1/m), zeta = k_psi / (2 wn).
+    k_e: float = 0.04  # 1/m^2 (wn = 0.2 /m)
+    k_psi: float = 0.28  # 1/m (zeta = 0.7)
 
 
 class RearWheelFeedback:

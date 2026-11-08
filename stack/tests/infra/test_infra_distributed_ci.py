@@ -1,7 +1,7 @@
 import pytest
 
-from cheesestack.infra import MapReduceError, TaskQueue, TaskQueueConfig, check_imports, map_reduce
-from cheesestack.infra.ci import CIConfig, discover_modules, main
+from cheesestack.infra import MapReduceError, TaskQueue, TaskQueueConfig, map_reduce
+from cheesestack.infra.ci import CIConfig, check_imports, discover_modules, main
 
 
 class Flaky:

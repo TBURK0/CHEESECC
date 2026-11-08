@@ -110,3 +110,11 @@ def test_json_logging(tmp_path):
     assert "RuntimeError" in json.loads(buf.getvalue().strip().splitlines()[-1])["exc"]
     setup_logging(LoggingConfig(stream=False))  # detach file handler
     logging.getLogger("cheesestack.noisy").setLevel(logging.NOTSET)
+
+
+def test_telemetry_max_packets_keeps_rest():
+    sink = TelemetrySink(TelemetryConfig(max_packet_bytes=60))
+    for i in range(10):
+        sink.record("a", i, t=float(i))
+    pkts = sink.flush(max_packets=1)
+    assert len(pkts) == 1 and sink.pending() == 10 - len(pkts[0].samples)

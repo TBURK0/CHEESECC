@@ -11,7 +11,6 @@ from .compression import (
     decode_timeseries, encode_timeseries, quantize, dequantize, varint_decode, varint_encode,
 )
 from .distributed import MapReduceError, TaskQueue, TaskQueueConfig, TaskResult, map_reduce
-from .ci import CIConfig, check_imports
 from .registry import ModelRegistry, ModelRegistryConfig, ModelVersion, RegistryError
 from .monitoring import HealthAggregator, MonitoringConfig, StatusServer
 from .experiments import ExperimentConfig, ExperimentTracker, Run, compare_runs
@@ -26,7 +25,6 @@ __all__ = [
     "CompressionConfig", "TimeseriesCodecConfig", "compress", "decompress",
     "decode_timeseries", "encode_timeseries", "quantize", "dequantize", "varint_decode", "varint_encode",
     "MapReduceError", "TaskQueue", "TaskQueueConfig", "TaskResult", "map_reduce",
-    "CIConfig", "check_imports",
     "ModelRegistry", "ModelRegistryConfig", "ModelVersion", "RegistryError",
     "HealthAggregator", "MonitoringConfig", "StatusServer",
     "ExperimentConfig", "ExperimentTracker", "Run", "compare_runs",
