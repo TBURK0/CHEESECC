@@ -15,7 +15,7 @@ from __future__ import annotations
 import copy
 import enum
 import math
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from typing import Optional
 
 from .boundaries import offset_polyline

@@ -124,13 +124,27 @@ class PlattScaler(Calibrator):
         t = np.where(y > 0.5, (npos + 1) / (npos + 2), 1 / (nneg + 2))  # Platt targets
         w = np.array([self.a, self.b])
         X = np.column_stack([x, np.ones_like(x)])
+        def obj(w):
+            m = X @ w  # stable cross-entropy: log(1+e^m) - t*m
+            return float(np.sum(np.logaddexp(0, m) - t * m) + 0.5 * l2 * w @ w)
+
+        f = obj(w)
         for _ in range(iters):
             p = sigmoid(X @ w)
             g = X.T @ (p - t) + l2 * w
             Hm = (X * (p * (1 - p))[:, None]).T @ X + l2 * np.eye(2)
             step = np.linalg.solve(Hm + 1e-9 * np.eye(2), g)
-            w = w - step
-            if np.max(np.abs(step)) < 1e-9:
+            alpha = 1.0  # backtracking line search (Newton alone diverges from saturated starts)
+            while alpha > 1e-8:
+                wn = w - alpha * step
+                fn = obj(wn)
+                if fn <= f - 1e-4 * alpha * float(g @ step):
+                    break
+                alpha *= 0.5
+            if alpha <= 1e-8:
+                break
+            w, f = wn, fn
+            if np.max(np.abs(alpha * step)) < 1e-9:
                 break
         self.a, self.b = float(w[0]), float(w[1])
         self.fitted = True
@@ -304,6 +318,7 @@ class ConfidenceScorer:
         return ScoredConfidence(float(np.clip(v, c.floor, c.ceiling)), f)
 
     def score_many(self, raws: Sequence[float], health: Optional[SensorHealth] = None, visibility: float = 1.0) -> np.ndarray:
+        """Vectorized product-mode scoring for many outputs sharing one sensor/environment."""
         cal = np.asarray(self.calibrator(np.asarray(raws, float)), float).ravel()
         k = self.health_score(health) * clamp01(visibility) ** self.config.visibility_exponent
         return np.clip(cal * k, self.config.floor, self.config.ceiling)

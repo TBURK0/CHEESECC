@@ -91,11 +91,11 @@ def test_projection_dlt_and_decompose(cam):
 
 def _views(K, dist, n=5, noise=0.0, seed=0):
     rng = np.random.default_rng(seed)
-    obj = checkerboard_points(6, 8, 0.05)
+    obj = checkerboard_points(7, 9, 0.1)  # 0.8 x 0.6 m board filling most of the frame
     objs, imgs = [], []
     for i in range(n):
-        R = rodrigues(rng.normal(0, 0.3, 3))
-        t = np.array([-0.2, -0.15, 1.0 + 0.1 * i])
+        R = rodrigues(rng.normal(0, 0.25, 3))
+        t = np.array([-0.4, -0.3, 1.2 + 0.1 * i])
         imgs.append(project_points(obj, K, R, t, dist) + rng.normal(0, noise, (len(obj), 2)))
         objs.append(obj)
     return objs, imgs

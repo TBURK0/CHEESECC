@@ -17,7 +17,7 @@ import enum
 import heapq
 import itertools
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Iterable, Optional
 
 import numpy as np
