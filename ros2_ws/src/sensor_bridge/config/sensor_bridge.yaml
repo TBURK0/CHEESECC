@@ -1,0 +1,12 @@
+sensor_bridge:
+  ros__parameters:
+    us_min_range: 0.02
+    us_max_range: 4.0
+    us_field_of_view: 0.26      # rad, ~15 deg HC-SR04 nominal - UNVERIFIED for the fitted sensors
+    stale_timeout_s: 1.0
+    gyro_calib_samples: 200     # ~2 s at 100 Hz; car must be still
+    gyro_calib_max_std: 0.02    # rad/s; above this the attempt is rejected as "moving"
+    # Chip axes -> base_link (x fwd, y left, z up), row-major signed permutation, det must be +1.
+    # Identity is a placeholder: real mounting is UNVERIFIED (docs/hardware.md -> Axis conventions).
+    mpu6050_axis_map: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+    itg3200_axis_map: [1, 0, 0, 0, 1, 0, 0, 0, 1]

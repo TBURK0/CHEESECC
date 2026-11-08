@@ -1,0 +1,11 @@
+vehicle_bridge:
+  ros__parameters:
+    port: /dev/ttyUSB0        # USB-UART adapter on the Jetson (UNVERIFIED device name); "sim:<path>" runs the host simulator
+    baud: 460800
+    cmd_rate_hz: 50.0
+    cmd_input_timeout_s: 0.2  # vehicle/cmd older than this -> DISARM request
+    telemetry_timeout_s: 0.5  # no STA for this long -> link down + DISARM, explicit re-arm required
+    allow_arm: false          # MUST be set true deliberately before vehicle/arm does anything
+    max_throttle: 0.25        # host-side limit; firmware MAX_THROTTLE_PM is authoritative
+    max_brake: 1.0
+    max_steering: 1.0
