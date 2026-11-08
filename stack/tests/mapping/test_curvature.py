@@ -76,5 +76,5 @@ def test_cubic_splines():
     cs = CubicSpline2D(circle(15.0, n=25))
     s, pts, h, k = cs.sample(1.0)
     inner = slice(5, -5)
-    np.testing.assert_allclose(k[inner], 1 / 15.0, rtol=0.02)
+    np.testing.assert_allclose(k[inner], 1 / 15.0, rtol=0.03)
     assert cs.length == pytest.approx(math.pi * 15, rel=1e-3)

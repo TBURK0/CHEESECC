@@ -16,7 +16,7 @@ use needs a learned crop classifier behind :class:`Classifier`.
 from __future__ import annotations
 
 import abc
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from typing import Optional, Sequence
 
 import numpy as np

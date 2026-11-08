@@ -13,13 +13,14 @@ def test_closure_expiry_and_versioning(sample_map):
     uid = ov.close_lane("r2_1", clock.now(), duration_s=60.0, source="v2x")
     assert ov.version == 1 and ov.is_closed("r2_1", 0.0)
     g = RoadGraph(sample_map)
-    assert g.shortest_path("r1_0", "r3_1", **ov.graph_constraints(clock.now())) is None
+    p = g.shortest_path("r1_0", "r3_1", **ov.graph_constraints(clock.now()))
+    assert "r2_1" not in p.lanes
     clock.advance(61.0)
     assert not ov.is_closed("r2_1", clock.now())
     assert ov.expire(clock.now()) == [uid]
     assert ov.version == 2 and len(ov) == 0
     assert [h.action for h in ov.history] == ["add", "expire"]
-    assert g.shortest_path("r1_0", "r3_1", **ov.graph_constraints(clock.now())) is not None
+    assert "r2_1" in g.shortest_path("r1_0", "r3_1", **ov.graph_constraints(clock.now())).lanes
 
 
 def test_partial_closure_and_future_start(sample_map):
@@ -72,8 +73,8 @@ def test_lane_change_block_materialize(sample_map):
     assert not ov.lane_change_allowed("r1_0", +1, 1.0) and ov.lane_change_allowed("r1_0", -1, 1.0)
     lm = ov.materialize(1.0)
     g = RoadGraph(lm)
-    assert g.shortest_path("r1_0", "r3_1") is None
-    assert RoadGraph(ov.materialize(31.0)).shortest_path("r1_0", "r3_1") is not None
+    assert g.shortest_path("r1_0", "r3_1").lanes[1] != "r1_1"  # cannot change left on r1_0
+    assert RoadGraph(ov.materialize(31.0)).shortest_path("r1_0", "r3_1").lanes[1] == "r1_1"
 
 
 def test_materialize_drops_closed_lane_and_remove(sample_map):

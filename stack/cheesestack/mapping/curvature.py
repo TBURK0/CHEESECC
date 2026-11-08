@@ -68,10 +68,15 @@ def heading_rate_curvature(points) -> np.ndarray:
 
 
 def curvature_profile(polyline, ds: float = 1.0) -> tuple[np.ndarray, np.ndarray]:
-    """(s, kappa) sampled every ~ds along a `Polyline` (anything with .length/.interpolate)."""
+    """(s, kappa) every ~ds along a `Polyline` (needs .points, .s, .length).
+
+    Curvature is evaluated on the original vertices (resampling first would put
+    collinear samples inside straight segments and read zero) and linearly
+    interpolated onto the uniform grid.
+    """
     n = max(3, int(math.ceil(polyline.length / ds)) + 1)
     s = np.linspace(0.0, polyline.length, n)
-    return s, discrete_curvature(polyline.interpolate(s))
+    return s, np.interp(s, polyline.s, discrete_curvature(polyline.points))
 
 
 # -------------------------------------------------------------------- smoothing

@@ -38,7 +38,9 @@ def test_astar_matches_dijkstra_and_expands_less(sample_map):
 
 def test_blocked_and_time_mode(sample_map):
     g = RoadGraph(sample_map)
-    assert g.shortest_path("r1_0", "r3_1", blocked={"r2_1"}) is None
+    detour = g.shortest_path("r1_0", "r3_1", blocked={"r2_1"})
+    assert detour.lanes == ["r1_0", "r2_0", "r3_0", "r3_1"]  # change lanes after the curve
+    assert g.shortest_path("r1_0", "r3_1", blocked={"r2_1", "r3_0"}) is None
     assert g.shortest_path("r1_0", "r3_0", blocked={"r3_0"}) is None
     gt = RoadGraph(sample_map, RoadGraphConfig(cost_mode="time"))
     p = gt.shortest_path("r1_0", "r3_0")
