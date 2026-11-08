@@ -1,0 +1,43 @@
+name: Stack CI
+
+on:
+  push:
+    paths:
+      - "stack/**"
+      - ".github/workflows/stack-ci.yml"
+  pull_request:
+    paths:
+      - "stack/**"
+      - ".github/workflows/stack-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: stack-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: stack
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: stack/pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Import check
+        run: python -m cheesestack.infra.ci --imports
+
+      - name: Pytest
+        run: python -m pytest tests -q
