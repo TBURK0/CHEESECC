@@ -51,7 +51,7 @@ def test_shapes_to_sign_types():
     ring_in = circle(40) & ~np.pad(circle(28), 6)
     img = scene((octagon(), 10, 10, RED), (triangle(up=False), 10, 70, RED), (circle(), 10, 130, BLUE),
                 (ring_in, 70, 10, RED), (triangle(up=True), 70, 70, RED))
-    put(img, np.pad(circle(28), 6) & ~np.zeros((40, 40), bool), 70, 10, WHITE)
+    put(img, np.pad(circle(28), 6), 70, 10, WHITE)
     assert sign_types(img) == {SignType.STOP, SignType.YIELD, SignType.MANDATORY, SignType.SPEED_LIMIT,
                                SignType.WARNING}
     dets = ColorShapeSignRecognizer().recognize(img, H)
