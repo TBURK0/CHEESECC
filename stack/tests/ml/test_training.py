@@ -31,10 +31,10 @@ def test_numeric_gradient_softmax():
     rng = np.random.default_rng(0)
     X, y = rng.normal(size=(5, 3)), np.array([0, 1, 2, 1, 0])
     m = SoftmaxRegression(3, 3, weight_decay=0.0)
-    W0 = m.params["W"].copy()
+    W0, b0 = m.params["W"].copy(), m.params["b"].copy()
     m.train_step(X, y, lr=1.0)  # W1 = W0 - grad
     grad = W0 - m.params["W"]
-    m.params["W"] = W0.copy()
+    m.params["W"], m.params["b"] = W0.copy(), b0
     num = np.zeros_like(W0)
     eps = 1e-5
     for idx in np.ndindex(W0.shape):

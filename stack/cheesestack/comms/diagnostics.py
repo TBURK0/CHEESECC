@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Optional, Union
 
 from cheesestack.core import Clock, SimClock
-from .can import Bus, CanFilter, CanFrame
+from .can import Bus, CanFilter, CanFrame, fd_padded_length
 
 
 # ============================== ISO-TP =====================================
@@ -177,8 +177,11 @@ class IsoTpTransport:
 
     # --- internals ---
     def _send_raw(self, data: bytes) -> None:
-        self.bus.send(CanFrame(self.cfg.tx_id, _pad(data, self.cfg), is_extended=self.cfg.extended_ids,
-                               is_fd=self.cfg.frame_len > 8 and len(_pad(data, self.cfg)) in (12, 16, 20, 24, 32, 48, 64)))
+        data = _pad(data, self.cfg)
+        fd = self.cfg.frame_len > 8
+        if fd:  # CAN-FD only allows discrete lengths above 8
+            data = data.ljust(fd_padded_length(len(data)), bytes([self.cfg.padding or 0]))
+        self.bus.send(CanFrame(self.cfg.tx_id, data, is_extended=self.cfg.extended_ids, is_fd=fd))
 
     def _fail_tx(self, why: str) -> None:
         self.errors.append(f"tx: {why}")
