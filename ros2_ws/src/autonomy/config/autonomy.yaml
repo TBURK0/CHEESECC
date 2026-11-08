@@ -1,0 +1,13 @@
+autonomy_pipeline:
+  ros__parameters:
+    # Measure all geometry relative to the rear axle base_link before enabling.
+    mount_calibrated: false
+    geometry_calibrated: false
+    use_tf: true
+    command_source: candidate
+    require_ultrasonics: false
+    wheelbase_m: 0.26
+    front_m: 0.32
+    rear_m: 0.10
+    half_width_m: 0.12
+    max_steer_rad: 0.45
