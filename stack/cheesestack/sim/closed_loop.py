@@ -140,14 +140,15 @@ class BusController:
 
     The runner has already published /sim/ego_state, /sim/ground_truth and sensor
     topics for this tick. If no command is available, a full-brake command is returned
-    (fail-safe) and `missing_count` is incremented.
+    (fail-safe) and `missing_count` is incremented; the same happens when the latest
+    command is older than `max_age` seconds (stalled planner/controller).
     """
 
     def __init__(self, nodes: Sequence[Node] = (), command_topic: str = COMMAND_TOPIC,
-                 hook: Optional[Callable[[VehicleState, WorldView], None]] = None) -> None:
+                 hook: Optional[Callable[[VehicleState, WorldView], None]] = None, max_age: float = 0.5) -> None:
         self.nodes, self.command_topic, self.hook = list(nodes), command_topic, hook
+        self.max_age = max_age
         self.missing_count = 0
-        self._last_seen: Optional[ControlCommand] = None
 
     def __call__(self, state: VehicleState, view: WorldView) -> ControlCommand:
         if self.hook is not None:
@@ -155,10 +156,9 @@ class BusController:
         for n in self.nodes:
             n.tick()
         cmd = view.bus.latest(self.command_topic)
-        if cmd is None or cmd is self._last_seen and self.nodes:
+        if cmd is None or view.t - cmd.header.stamp > self.max_age:
             self.missing_count += 1
             return ControlCommand(Header(view.t, source="sim.bus_controller"), brake=1.0, source="sim.failsafe")
-        self._last_seen = cmd
         return cmd
 
 

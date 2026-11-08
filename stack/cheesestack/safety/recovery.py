@@ -86,6 +86,9 @@ class RecoveryManager:
         if handler is not None:
             self._handlers[code] = handler
 
+    def has_handler(self, code: str) -> bool:
+        return code in self._handlers
+
     def policy_for(self, code: str) -> RecoveryPolicy:
         if code in self._policies:
             return self._policies[code]
