@@ -168,7 +168,7 @@ class VehicleTwin:
         yaw = self.x[IYAW]
         c, s = math.cos(yaw), math.sin(yaw)
         off = p.center_offset
-        center = Pose2D(self.x[IX] + off * c, self.x[IY] + off * s, wrap_angle(yaw))
+        center = Pose2D(float(self.x[IX] + off * c), float(self.x[IY] + off * s), wrap_angle(float(yaw)))
         # Velocity of the box centre: rear-axle velocity + r x offset.
         vbx, vby = self.x[IVX], self.x[IVY] - p.lr * self.x[IR] + off * self.x[IR]
         vel = np.array([c * vbx - s * vby, s * vbx + c * vby])

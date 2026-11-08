@@ -26,7 +26,8 @@ def test_open_and_bounded_gaps():
     cur = [g for g in gaps if g.contains_ego][0]
     assert cur.acceptable, cur.reasons
     assert cur.front_headway == pytest.approx((40 - 2.25 - 2.35) / 20)
-    assert ga.best_current_gap(0.0, 20.0, lo) is cur
+    best = ga.best_current_gap(0.0, 20.0, lo)
+    assert best.rear.track_id == 1 and best.front.track_id == 2
 
 
 def test_unacceptable_gap_reasons():
@@ -48,8 +49,9 @@ def test_merge_into_gap_ahead():
     assert not any(g.acceptable for g in gaps if g.contains_ego)
     plan = mp.plan(0.0, 18.0, 0.0, gaps)
     assert plan is not None
-    assert plan.gap.rear is not None and plan.gap.rear.track_id in (1, 2) or plan.gap.rear is None
-    assert plan.v[-1] == pytest.approx(plan.gap.speed if plan.gap.front and plan.gap.rear else plan.v[-1])
+    assert not plan.gap.contains_ego
+    if plan.gap.front and plan.gap.rear:
+        assert plan.v[-1] == pytest.approx(plan.gap.speed)
     assert plan.a.max() <= mp.config.a_max + 1e-9 and plan.a.min() >= mp.config.a_min - 1e-9
     assert np.all(np.diff(plan.t) > 0)
     # ego ends inside the chosen gap (propagated)

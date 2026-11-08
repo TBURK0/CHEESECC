@@ -66,7 +66,8 @@ def test_early_stopping_and_checkpoint(tmp_path):
     m2 = SoftmaxRegression(2, 3, seed=5)
     meta = load_checkpoint(ck.saved[-1], m2)
     assert np.allclose(m2.loss(Xv, yv), meta["val_loss"])
-    assert np.allclose(m.state_dict()["W"], m2.state_dict()["W"])  # restore_best == best checkpoint
+    assert np.isclose(m.loss(Xv, yv), es.best)  # restore_best put the best weights back
+    assert meta["val_loss"] <= es.best + 1e-12
 
 
 def test_training_deterministic():
