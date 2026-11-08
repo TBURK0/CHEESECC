@@ -18,7 +18,7 @@ def test_smoothing_reduces_roughness_and_keeps_endpoints():
 
 
 def test_resample_and_curvature_on_circle():
-    th = np.linspace(0, np.pi, 50)
+    th = np.linspace(0, np.pi, 1000)
     circ = np.stack([20 * np.cos(th), 20 * np.sin(th)], 1)
     rs = resample_polyline(circ, 0.5)
     seg = np.linalg.norm(np.diff(rs, axis=0), axis=1)
