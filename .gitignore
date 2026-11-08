@@ -6,3 +6,7 @@ xcuserdata/
 *.ipa
 *.dSYM
 *.dSYM.zip
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
