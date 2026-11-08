@@ -159,11 +159,13 @@ class MRMConfig:
     emergency_decel_mps2: float = 6.0
     emergency_jerk_mps3: float = 10.0
     release_near_stop: bool = True
+    min_release_decel_mps2: float = 0.2  # decel floor kept during release until stop
     stop_speed_mps: float = 0.05
     full_brake_decel_mps2: float = 8.0  # decel produced by brake=1.0
     hold_brake: float = 0.4  # brake held at standstill
     plan_dt_s: float = 0.02
     max_plan_s: float = 60.0
+    unknown_speed_mps: float = 40.0  # assumed speed when v0 is not finite
     max_dt_s: float = 0.2  # clamp step dt (missed cycles must not cause jerk spikes)
 
 
@@ -192,6 +194,7 @@ class MinimalRiskManeuver:
         self.v = 0.0
         self.t_last = 0.0
         self.t_start = 0.0
+        self._releasing = False
         self._seq = 0
 
     @property
@@ -204,9 +207,11 @@ class MinimalRiskManeuver:
 
     def start(self, t: float, v0: float, a0: float = 0.0, emergency: bool = False) -> None:
         self.active, self.stopped, self.emergency = True, False, emergency
-        self.v = max(0.0, float(v0)) if math.isfinite(v0) else 0.0
+        # Unknown speed: assume moving (conservative) so the full braking profile runs.
+        self.v = max(0.0, float(v0)) if math.isfinite(v0) else self.config.unknown_speed_mps
         self.a = min(float(a0), 0.0) if math.isfinite(a0) else 0.0
         self.t_last = self.t_start = float(t)
+        self._releasing = False
         if self.v <= self.config.stop_speed_mps:
             self.stopped, self.v, self.a = True, 0.0, 0.0
 
@@ -225,17 +230,18 @@ class MinimalRiskManeuver:
             # Speed: prefer measurement (closed loop), else integrate the profile.
             v_meas_ok = v_measured is not None and math.isfinite(v_measured)
             v_now = max(0.0, float(v_measured)) if v_meas_ok else max(0.0, self.v + self.a * dt)
-            if c.release_near_stop and self.a < 0 and v_now <= self.a ** 2 / (2 * j):
-                a_new = min(self.a + j * dt, 0.0)
+            if c.release_near_stop and not self._releasing and self.a < 0 and v_now <= self.a ** 2 / (2 * j):
+                self._releasing = True  # latched: no chatter between ramp-down and release
+            if self._releasing:
+                # Ramp decel back toward a small floor so the car cannot end up creeping at a=0.
+                floor = -min(c.min_release_decel_mps2, d)
+                a_new = min(self.a + j * dt, floor) if self.a < floor else self.a
             elif self.a > -d:
                 a_new = max(self.a - j * dt, -d)
             else:
-                a_new = min(self.a + j * dt, -d)  # started beyond -d (or decel reduced)
+                a_new = min(self.a + j * dt, -d)  # started beyond -d
             self.a = a_new
             self.v = v_now
-            # Guard: release must not leave the car creeping - keep a minimum decel floor.
-            if c.release_near_stop and self.v > c.stop_speed_mps and self.a > -0.05 * d:
-                self.a = max(self.a - j * dt, -0.05 * d) if self.a > -0.05 * d else self.a
             if self.v <= c.stop_speed_mps:
                 self.stopped, self.v = True, 0.0
         self._seq += 1

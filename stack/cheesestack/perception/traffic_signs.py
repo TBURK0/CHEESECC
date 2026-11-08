@@ -148,7 +148,7 @@ class ColorShapeSignRecognizer(TrafficSignRecognizer):
                 # white horizontal bar through the center (no-entry)
                 hh = filled.shape[0]
                 band = slice(int(hh * 0.42), max(int(hh * 0.42) + 1, int(hh * 0.58)))
-                center_bar = bool(interior > 0.1 and (~blob[band][filled[band]]).mean() > 0.6
+                center_bar = bool(interior > 0.1 and (~blob[band][filled[band]]).mean() > 0.45
                                   and not ring) if filled[band].any() else False
                 stype = sign_type_from(color, shape, ring, center_bar)
                 shape_conf = 1.0 - min(1.0, abs(np.log(box.h / box.w)) / cfg.max_aspect_dev) * 0.5

@@ -4,7 +4,7 @@ IMU frame follows the vehicle convention (x forward, y left, z up). Acceleromete
 measure specific force f = a - g_world, so a level IMU at rest reads (0, 0, +g).
 
 What works now:
-- `StandstillDetector`: sliding-window variance test on |accel| and |gyro|
+- `StandstillDetector`: sliding-window per-axis std test on accel and gyro
   (optionally AND-ed with a wheel-speed zero flag).
 - `ImuBiasEstimator`: running mean of gyro (bias) and accel (gravity direction
   -> roll/pitch mount tilt) while stationary.
@@ -76,14 +76,15 @@ class StandstillDetector:
         self._gyr: deque = deque(maxlen=self.config.window)
 
     def update(self, sample: ImuSample, wheels_stopped: Optional[bool] = None) -> bool:
-        self._acc.append(float(np.linalg.norm(sample.accel)))
+        self._acc.append(np.asarray(sample.accel, dtype=float))
         self._gyr.append(np.asarray(sample.gyro, dtype=float))
         if len(self._acc) < self.config.window:
             return False
         if wheels_stopped is False:
             return False
         g = np.array(self._gyr)
-        still = (np.std(self._acc) < self.config.accel_std_max
+        a = np.array(self._acc)
+        still = (float(np.max(np.std(a, axis=0))) < self.config.accel_std_max
                  and float(np.max(np.std(g, axis=0))) < self.config.gyro_std_max
                  and float(np.linalg.norm(g.mean(axis=0))) < self.config.gyro_mean_max)
         return bool(still)

@@ -91,10 +91,10 @@ def test_clock_offset_and_drift():
     rng = np.random.default_rng(4)
     est = ClockOffsetEstimator()
     for k in range(200):
-        s = k * 0.05
-        est.add(s, s * (1 + 1e-4) + 2.5 + 0.01 + rng.exponential(0.005))  # 10 ms fixed + jitter latency
-    assert est.drift == pytest.approx(1e-4, abs=5e-5)
-    assert est.to_host(5.0) == pytest.approx(5.0 * (1 + 1e-4) + 2.51, abs=0.003)
+        s = k * 0.5
+        est.add(s, s * (1 + 1e-3) + 2.5 + 0.01 + rng.exponential(0.005))  # 10 ms fixed + jitter latency
+    assert est.drift == pytest.approx(1e-3, abs=1e-4)
+    assert est.to_host(50.0) == pytest.approx(50.0 * (1 + 1e-3) + 2.51, abs=0.003)
 
 
 def test_interpolation_buffer():

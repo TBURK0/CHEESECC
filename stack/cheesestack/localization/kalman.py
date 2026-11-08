@@ -200,8 +200,9 @@ class CTRVModel:
             nx = x + v / w * (math.sin(th + w * dt) - math.sin(th))
             ny = y + v / w * (math.cos(th) - math.cos(th + w * dt))
         else:
-            nx = x + v * math.cos(th) * dt
-            ny = y + v * math.sin(th) * dt
+            # Second-order expansion in w so the model matches its Jacobian across the branch.
+            nx = x + v * math.cos(th) * dt - 0.5 * v * math.sin(th) * w * dt * dt
+            ny = y + v * math.sin(th) * dt + 0.5 * v * math.cos(th) * w * dt * dt
         return np.array([nx, ny, wrap_angle(th + w * dt), v, w])
 
     def jacobian(self, s: np.ndarray, dt: float) -> np.ndarray:
