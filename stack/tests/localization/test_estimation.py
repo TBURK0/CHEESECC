@@ -48,6 +48,10 @@ def test_state_estimator_rejects_gps_outlier():
     assert est.update_gps(m(0.1, [0.1, 0]))
     assert not est.update_gps(m(0.2, [200, 0]))
     assert est.rejected["gps"] == 1
+    # Persistent disagreement (e.g. after a GPS relocation) -> re-initialized after N rejections.
+    for k in range(est.config.max_consecutive_rejects - 1):
+        est.update_gps(m(0.3 + 0.01 * k, [200, 0]))
+    assert est.ekf.x[0] == pytest.approx(200.0)
 
 
 def test_heading_filter_converges_and_learns_bias():

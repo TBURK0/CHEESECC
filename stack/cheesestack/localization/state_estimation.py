@@ -47,6 +47,7 @@ class StateEstimatorConfig:
     gate_gps: bool = True
     gps_gate_probability: float = 0.999
     gate_scalar: bool = True
+    max_consecutive_rejects: int = 5  # then re-initialize that state from the measurement (lock-out recovery)
     max_predict_dt: float = 0.5  # split long predictions into steps
     accel_tau_s: float = 0.3
     curvature: CurvatureConfig = field(default_factory=CurvatureConfig)
@@ -78,6 +79,8 @@ class StateEstimator(Node):
         self._seq = 0
         self.last_nis: dict[str, float] = {}
         self.rejected: dict[str, int] = {}
+        self._consecutive: dict[str, int] = {}
+        self.speed_initialized = False
         self._subs = [
             self.bus.subscribe(c.gps_topic, lambda _t, m: self.update_gps(m)),
             self.bus.subscribe(c.wheels_topic, lambda _t, m: self.update_wheels(m)),
@@ -102,6 +105,22 @@ class StateEstimator(Node):
         self.accel += k * ((self.ekf.x[3] - v0) / dt_total - self.accel)
         self.t = t
 
+    def _reset_state(self, idxs, values, cov) -> None:
+        idxs = list(idxs)
+        self.ekf.x[idxs] = values
+        self.ekf.P[idxs, :] = 0.0
+        self.ekf.P[:, idxs] = 0.0
+        self.ekf.P[np.ix_(idxs, idxs)] = cov
+
+    def _note_reject(self, name: str) -> bool:
+        """Count a gated rejection; True if the lock-out limit is reached (caller re-initializes)."""
+        self.rejected[name] = self.rejected.get(name, 0) + 1
+        self._consecutive[name] = self._consecutive.get(name, 0) + 1
+        if self._consecutive[name] >= self.config.max_consecutive_rejects:
+            self._consecutive[name] = 0
+            return True
+        return False
+
     def _scalar(self, name: str, idx: int, z: float, var: float, angle: bool = False) -> bool:
         H = np.zeros((1, 5))
         H[0, idx] = 1.0
@@ -110,8 +129,10 @@ class StateEstimator(Node):
                               residual_angles=(0,) if angle else (), gate=gate)
         self.last_nis[name] = nis
         if gate is not None and nis > gate:
-            self.rejected[name] = self.rejected.get(name, 0) + 1
+            if self._note_reject(name):
+                self._reset_state([idx], [wrap_angle(z) if angle else z], [[var]])
             return False
+        self._consecutive[name] = 0
         return True
 
     # --- measurement interfaces -----------------------------------------
@@ -120,10 +141,7 @@ class StateEstimator(Node):
             return False
         self.predict_to(m.header.stamp)
         if not self.position_initialized:
-            self.ekf.x[:2] = m.xy
-            self.ekf.P[:2, :2] = m.cov
-            self.ekf.P[:2, 2:] = 0.0
-            self.ekf.P[2:, :2] = 0.0
+            self._reset_state([0, 1], m.xy, m.cov)
             self.position_initialized = True
         else:
             H = np.zeros((2, 5))
@@ -132,8 +150,10 @@ class StateEstimator(Node):
             nis = self.ekf.update(m.xy, lambda s: s[:2], m.cov, H=H, gate=gate)
             self.last_nis["gps"] = nis
             if gate is not None and nis > gate:
-                self.rejected["gps"] = self.rejected.get("gps", 0) + 1
+                if self._note_reject("gps"):
+                    self._reset_state([0, 1], m.xy, m.cov)
                 return False
+            self._consecutive["gps"] = 0
         if m.course_yaw is not None and (m.speed_mps or 0.0) >= self.config.course_min_speed_mps:
             self.update_heading(m.header.stamp, m.course_yaw, self.config.course_var)
         return True
@@ -141,16 +161,17 @@ class StateEstimator(Node):
     def update_heading(self, t: float, yaw: float, var: float) -> bool:
         self.predict_to(t)
         if not self.heading_initialized:
-            self.ekf.x[2] = wrap_angle(yaw)
-            self.ekf.P[2, :] = 0.0
-            self.ekf.P[:, 2] = 0.0
-            self.ekf.P[2, 2] = var
+            self._reset_state([2], [wrap_angle(yaw)], [[var]])
             self.heading_initialized = True
             return True
         return self._scalar("heading", 2, yaw, var, angle=True)
 
     def update_speed(self, t: float, v: float, var: float) -> bool:
         self.predict_to(t)
+        if not self.speed_initialized:
+            self._reset_state([3], [v], [[var]])
+            self.speed_initialized = True
+            return True
         return self._scalar("speed", 3, v, var)
 
     def update_yaw_rate(self, t: float, r: float, var: float) -> bool:
