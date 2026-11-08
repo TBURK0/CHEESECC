@@ -148,5 +148,8 @@ def test_pose_tracker_delayed_correction():
     assert pt.map_pose.x == pytest.approx(11.0)
     assert pt.odom_pose.x == pytest.approx(10.0)  # odom continuous
     assert not pt.correct(1.0, Pose2D(1000, 0, 0))
-    pt.add_velocity(1.1, 0.0, 0.0)
-    pt.add_velocity(1.2, math.pi / 2, math.pi / 2 / 0.1 * 0.1 / 0.1 / 10)  # quarter-arc check below
+    arc = PoseTracker()
+    arc.reset(0.0, Pose2D())
+    arc.add_velocity(1.0, 10 * math.pi / 2, math.pi / 2)  # quarter circle of radius 10
+    assert np.allclose(arc.map_pose.as_array(), [10, 10, math.pi / 2])
+    assert arc.map_pose_at(0.5) is not None

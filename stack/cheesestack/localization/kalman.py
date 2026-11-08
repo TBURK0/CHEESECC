@@ -161,7 +161,6 @@ class UnscentedKalmanFilter:
         self.x = self._mean(pts, self.angle_indices)
         d = _wrap_idx(pts - self.x, self.angle_indices)
         self.P = (self.Wc[:, None] * d).T @ d + np.asarray(Q, float)
-        self._pred_pts = pts
 
     def update(self, z, h, R, residual_angles: Sequence[int] = (), gate: Optional[float] = None) -> float:
         pts = self.sigma_points()

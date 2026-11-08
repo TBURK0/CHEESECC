@@ -24,9 +24,9 @@ from typing import Callable, Optional, Protocol
 
 import numpy as np
 
-from cheesestack.core import ObjectClass, Pose2D
+from cheesestack.core import ObjectClass, Pose2D, SimClock
 
-from .physics import ActorTruth, World, WorldConfig, rk4_step
+from .physics import ActorTruth, World, WorldConfig, rk4_step  # noqa: F401
 from .roads import Road
 from .vehicle_twin import TwinConfig, VehicleParams, VehicleTwin
 
@@ -255,11 +255,11 @@ class Scenario:
         return self.road.pose_at(self.ego.s0, self.ego_d())
 
     def build_world(self, vehicle_params: VehicleParams = VehicleParams(),
-                    twin_config: TwinConfig = TwinConfig()) -> tuple[World, VehicleTwin]:
+                    twin_config: TwinConfig = TwinConfig(), clock: Optional[SimClock] = None) -> tuple[World, VehicleTwin]:
         """Fresh world (ego twin first, then actors). Behaviours are deep-copied so runs are independent."""
         import copy
 
-        world = World(WorldConfig(dt=self.dt, seed=self.seed))
+        world = World(WorldConfig(dt=self.dt, seed=self.seed), clock)
         world.context["road"] = self.road
         world.context["scenario"] = self
         twin = VehicleTwin(vehicle_params, twin_config, self.ego_start_pose(), self.ego.v0)

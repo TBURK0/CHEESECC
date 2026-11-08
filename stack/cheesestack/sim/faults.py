@@ -29,12 +29,12 @@ import dataclasses
 import heapq
 import itertools
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional
 
 import numpy as np
 
-from cheesestack.core import Clock, Fault, MessageBus, Severity, SimClock
+from cheesestack.core import Clock, Fault, MessageBus, Severity
 
 FAULT_KINDS = ("dropout", "delay", "noise", "bias", "stuck", "corrupt")
 
