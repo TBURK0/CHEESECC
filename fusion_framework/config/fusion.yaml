@@ -1,0 +1,61 @@
+# Sensor fusion configuration.
+#
+# Values marked MEASURE are unknown until the named test step. They start as
+# null; `python -m tools.check_config` lists what is still missing, and each
+# layer refuses to start until the values it needs are filled in. That way
+# no guessed number silently ends up tuning the car.
+#
+# Frames: body frame FLU (x forward, y left, z up), origin at the rear-axle
+# center on the ground. Positions in meters, angles in degrees.
+
+vehicle:
+  wheelbase: null            # MEASURE step 4 (tape measure)
+  width: null                # MEASURE (tape measure)
+  front_bumper_x: null       # MEASURE (tape measure)
+  steer_map: null            # MEASURE step 4: list of [servo_cmd, steer_deg]
+  meters_per_tick: null      # MEASURE step 4: drive a measured straight
+  max_decel: null            # MEASURE step 7: braking tests
+  max_speed: 1.0             # m/s, start slow; raise only after step 8 passes
+
+imu:
+  position: null             # MEASURE: [x, y, z]
+  mount_rpy_deg: [0, 0, 0]   # MEASURE: how the chip is rotated vs body axes
+  rate_hz: null              # MEASURE step 1: actual delivered rate
+  gyro_noise: null           # MEASURE step 1: std at rest (rad/s)
+  gyro_bias_walk: null       # MEASURE step 1: from the 10+ min still log
+  accel_noise: null          # MEASURE step 1
+  accel_calib: null          # MEASURE step 1: 6-position {offset: [], scale: []}
+
+extra_accels: []             # MEASURE: one entry per unit, e.g.
+#  - name: front_left
+#    position: [x, y, z]
+#    mount_rpy_deg: [0, 0, 0]
+#    accel_calib: null
+
+camera:
+  position: null             # MEASURE: [x, y, z]
+  pitch_deg: null            # MEASURE
+  min_range: null            # MEASURE step 1
+  max_useful_range: null     # MEASURE step 1: where noise gets too large
+  time_offset_s: null        # MEASURE step 2: tap test
+  vo_latency_s: null         # MEASURE step 2
+  vo_drift_per_m: null       # MEASURE step 5
+
+ultrasonics:
+  beam_half_angle_deg: null  # MEASURE step 1: slide a pole sideways
+  min_range: null            # MEASURE step 1
+  max_range: null            # MEASURE step 1
+  range_std: null            # MEASURE step 1
+  sensors: []                # MEASURE: one entry per unit, e.g.
+#  - name: front_center
+#    pose: [x, y, yaw_deg]
+
+ekf:                         # TUNE step 6, offline on replayed logs
+  history_s: 0.5             # must exceed the worst VO latency from step 2
+  pos_model_noise: null
+  vel_model_noise: null
+
+safety:
+  latency_s: null            # MEASURE step 7: command-to-braking delay
+  margin_m: 0.3              # start generous, shrink only with evidence
+  host_watchdog_s: 0.2
