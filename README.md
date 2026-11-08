@@ -1,10 +1,55 @@
 # CHEESECC
 
-MAKEUC 26 submission. CHEESECC is an on-vehicle autonomy stack with an iPhone as the rider interface.
+CHEESECC is a retrofit autonomy stack for a car that is already on the road. An iPhone is the rider interface. A vehicle computer sees and plans. A microcontroller is the last thing before the steering, throttle, and brake, and it stops the car if the computer goes quiet.
 
-The phone picks a destination and rides along with GPS. A vehicle computer turns the forward camera, depth, ultrasonics, and inertial sensors into a path and an actuator request. A DAVE-2 style network maps one camera frame to a steering-wheel angle. A small microcontroller is the last safety authority before the steering, throttle, and brake. If that gateway goes quiet, the vehicle computer cannot keep the car moving.
+## The problem
 
-The phone is Swift and MapKit. The classical autonomy layers are a NumPy stack that also runs without ROS. The vehicle computer is ROS 2. The gateway is an STM32 on a serial link, and it is the only component that drives the actuators.
+Driving is how most people reach work, school, and a hospital, and it is also how a large share of accidental deaths happen. The cars that will be on the road for the next decade are not robotaxis. They are ordinary vehicles with a person who may be tired, inexperienced, or unable to drive at all.
+
+Factory autonomy does not reach those cars. It ships as a new vehicle, a private fleet, and a stack the owner cannot inspect. Someone who cannot drive, or who cannot afford a new car, is left asking another person for a ride. A camera model running on a single computer does not fix that. If that computer, its USB link, or its software hangs, nothing is left that can take the actuators away.
+
+The useful unit is a kit that bolts to a car the owner already has: a phone they already carry, a short-range view of the road, and a piece of hardware whose only job is to refuse a bad command and to stop when the rest of the system dies.
+
+## What we built
+
+CHEESECC splits that kit by the job each part is actually good at.
+
+The phone plans the trip and stays in the rider's hand. It takes a start and a stop, follows GPS the way a navigation app does, and turns the route into a stream of short commands: where the car should be next, how fast, and how much wheel. The car in the garage is not a picture. Wheelbase, mass, steering ratio, and tire size change the wheel angle and the speed target. While the car is moving, the phone records those commands against the map and fits, on the device, how this car's wheel relates to curvature.
+
+The vehicle computer holds the live scene. Depth and four corner ultrasonics fill a local occupancy map that treats unknown space as blocked. A bicycle-lattice search and pure pursuit turn a clear path into a request. A forward camera feeds a DAVE-2 style network whose output is a steering-wheel angle. Semantic detections sit beside the geometric map. They do not get to waive a stop.
+
+The gateway is an STM32. It is the only component that drives the actuators. Every request is clamped, checked, and dropped if it is older than 200 ms. If the computer, the USB link, or the bridge dies, the microcontroller stops the vehicle on its own. An e-stop has to be present before the firmware will arm.
+
+The same command the phone shows is the command the rest of the stack speaks. `DriveBridge` checks it, replaces a bad one with a braking stop, and encodes it as CAN. Positive steering is left on the phone, on the CAN database, and on the serial link.
+
+## Hardware
+
+Each sensor covers a failure the others have.
+
+| Piece | Role |
+|---|---|
+| iPhone | Route, GPS, rider supervision, on-device kinematic log. When-in-use location. |
+| NVIDIA Jetson | Vehicle computer. Runs the ROS 2 scene, map, and planner. Depth camera is USB3 into this machine. |
+| Intel RealSense D405 | Rectified depth for geometric obstacles. A bad patch in the center of the frame rejects the scene. |
+| Four corner ultrasonics | Close range the camera misses, including the corners of the car. A too-close reading brakes in every mode. |
+| MPU-6050 and a second gyro (ITG-3200 class) | Yaw rate and acceleration. Published separately so the filter can cross-check them instead of trusting one chip. |
+| Arduino UNO Q, STM32 side | Safety authority. PWM for throttle, brake, and steering. The Qualcomm Linux side of the board is not in the control path. |
+| 3.3 V USB-UART | Link from the Jetson to the MCU. 460800 baud, 8N1. CRC-16 on every frame. |
+| Normally closed e-stop | GPIO, active low. Arming is refused without it. |
+
+Actuator outputs stay off until mounts, geometry, and that e-stop are confirmed on the car. The pin map and the bring-up checklist are in `docs/hardware.md`. The wire format is in `docs/serial_protocol.md`.
+
+## Stack
+
+| Layer | What it is |
+|---|---|
+| Phone | Swift, SwiftUI, MapKit, Core Location, SwiftData. Xcode 16 or newer. |
+| On-device learning | Handwheel angle against curvature, fit on the phone, exportable JSON. |
+| Vehicle software | ROS 2. Autonomy node, sensor bridge, vehicle bridge, telemetry. |
+| Portable autonomy | `stack/cheesestack`, Python 3.10+ and NumPy. Perception through control, safety, CAN, and simulation, with no ROS required. |
+| Camera policy | DAVE-2 style CNN, 3×66×200 in, steering-wheel degrees out, 252,219 parameters. `infer.py` runs the forward pass in NumPy. |
+| Gateway | C++ firmware on the STM32. Host tests run without the board. |
+| Bus | CHEESECC CAN database plus a text serial protocol. Throttle and brake are per-mille. Steering is per-mille, −1000 to 1000, positive left. |
 
 ## A drive, from destination to actuators
 
@@ -20,7 +65,7 @@ Positive steering is left on the phone, on the CAN database, and on the serial l
 
 ## iPhone
 
-Open `theapp/CHEESECC.xcodeproj` in Xcode 16 or newer. Bundle id is `com.makeuc.cheesecc`. Change it to the id registered on your Apple team before upload.
+Open `theapp/CHEESECC.xcodeproj` in Xcode 16 or newer. Set the bundle id to the one registered on your Apple team before upload.
 
 The app is a SwiftUI tab bar: Drive, Garage, Learn.
 
@@ -32,7 +77,7 @@ The app is a SwiftUI tab bar: Drive, Garage, Learn.
 
 Location is when-in-use. The follow loop runs while the app is in the foreground. A simulated location or a GPX track in Xcode is read the same way as a live fix.
 
-TestFlight is the install path for phones that are not plugged into Xcode. The workflow is `.github/workflows/testflight.yml`. It is manual (`workflow_dispatch`). On a Mac runner it selects Xcode 26, archives `theapp/CHEESECC.xcodeproj`, and uploads. The archive is built unsigned so the export step can sign for the App Store. App Store Connect currently rejects an iOS 18 SDK upload, which is why the runner is macOS 26. Secrets required on the GitHub repo: `APPLE_TEAM_ID`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, and `ASC_PRIVATE_KEY` (the full `.p8`). Add internal testers after processing. External review is too slow for a hackathon.
+TestFlight is the install path for phones that are not plugged into Xcode. The workflow is `.github/workflows/testflight.yml`. It is manual (`workflow_dispatch`). On a Mac runner it selects Xcode 26, archives `theapp/CHEESECC.xcodeproj`, and uploads. The archive is built unsigned so the export step can sign for the App Store. App Store Connect currently rejects an iOS 18 SDK upload, which is why the runner is macOS 26. Secrets required on the GitHub repo: `APPLE_TEAM_ID`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, and `ASC_PRIVATE_KEY` (the full `.p8`). Add internal testers after processing. External review takes longer than a demo window.
 
 ## Vehicle computer
 
